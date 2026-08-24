@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -37,7 +38,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * <p>Decision: a single {@link SecurityFilterChain} bean covers non-local
  * profiles; a second, higher-priority bean is added in the {@code local}
  * profile only. Two beans was simpler than juggling {@code WebSecurityCustomizer}
- * ignore patterns across profiles.
+ * ignore patterns across profiles. Spring Security does not order multiple
+ * {@code SecurityFilterChain} beans by declaration order when neither is
+ * annotated {@code @Order} — both chains below carry explicit {@link Order}
+ * values so the any-request chain is always evaluated last, as Spring
+ * Security's own multi-chain validation requires (an unordered pair, or the
+ * any-request chain published before a narrower one, fails fast at startup
+ * with {@code UnreachableFilterChainException}).
  */
 @Configuration
 @EnableWebSecurity
@@ -52,11 +59,12 @@ public class SecurityConfig {
 
     /**
      * Default chain — applies to all profiles. In non-local environments it is
-     * the only chain; in local it runs <em>after</em> {@link #localChain} via
-     * default ordering and never matches the Swagger paths because those are
-     * fully handled by the local chain.
+     * the only chain; in local it runs <em>after</em> {@link #localSwaggerChain}
+     * (see its lower {@link Order} value) and never matches the Swagger paths
+     * because those are fully handled by the local chain.
      */
     @Bean
+    @Order(2)
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(CsrfConfigurer::disable)
@@ -85,11 +93,13 @@ public class SecurityConfig {
     /**
      * Local-profile chain: permits Swagger UI and OpenAPI JSON without
      * authentication so that {@code mvn spring-boot:run -Dspring-boot.run.profiles=local}
-     * is friction-free for developers. Has higher priority via Spring Boot's
-     * default chain ordering (declared first).
+     * is friction-free for developers. {@code @Order(1)} gives it priority over
+     * {@link #defaultSecurityFilterChain}'s any-request match — Spring Security
+     * requires the any-request chain to be evaluated last among multiple chains.
      */
     @Bean
     @Profile("local")
+    @Order(1)
     SecurityFilterChain localSwaggerChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher(
