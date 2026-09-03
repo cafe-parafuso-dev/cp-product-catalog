@@ -47,6 +47,21 @@
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
     </properties>
 
+    <!--
+        contracts-catalog / contracts-events resolve from GitHub Packages,
+        published by platform-shared-contracts (ADR 0010 there; ADR 0013
+        here). Reading from this registry requires Maven authentication even
+        for public packages — see settings.xml at the repo root and
+        docs/adr/0013-consume-contracts-via-github-packages.md.
+    -->
+    <repositories>
+        <repository>
+            <id>github</id>
+            <name>Hubinity Platform Shared Contracts (GitHub Packages)</name>
+            <url>https://maven.pkg.github.com/hubinity/platform-shared-contracts</url>
+        </repository>
+    </repositories>
+
     <dependencies>
 
         <!-- Web / API -->

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Maven settings for resolving contracts-catalog / contracts-events from
+    platform-shared-contracts' GitHub Packages registry (ADR 0013). Mirrors
+    the template published at platform-shared-contracts/settings.xml so the
+    server id ("github") and the two env vars stay consistent org-wide.
+
+    HOW TO USE
+    ==========
+    Local dev: usually unnecessary — Maven finds contracts-catalog/
+    contracts-events in ~/.m2 once you've run `mvn install` in a sibling
+    checkout of platform-shared-contracts (see CLAUDE.md). Only needed
+    locally if you want to resolve straight from the registry instead.
+
+    Docker build (this repo's Dockerfile) / CI: copied into the build stage
+    and passed via `mvn -s settings.xml`, with GITHUB_USERNAME/GITHUB_TOKEN
+    supplied as build-time environment variables (Railway: mark both
+    variables "Available at Build Time" on the hb-catalog-service service).
+
+    GITHUB_TOKEN needs at least `read:packages`. The org's existing
+    GH_PACKAGES_TOKEN (see RUNBOOK.md §4.2 — already used for GHCR login)
+    already carries that scope and can be reused here.
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+    <servers>
+        <server>
+            <id>github</id>
+            <username>${env.GITHUB_USERNAME}</username>
+            <password>${env.GITHUB_TOKEN}</password>
+        </server>
+    </servers>
+
+</settings>
