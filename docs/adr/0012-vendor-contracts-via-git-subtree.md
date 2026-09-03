@@ -1,8 +1,16 @@
 # ADR 0012 — Vendor platform-shared-contracts via git subtree (stopgap)
 
-- **Status**: Accepted (stopgap)
+- **Status**: Superseded by [ADR 0013](0013-consume-contracts-via-github-packages.md)
 - **Date**: 2026-08-20
 - **Deciders**: Hubinity Platform team
+
+> **2026-09-03 update**: the "GitHub Packages" option below was rejected as
+> premature for a single consumer, citing `platform-shared-contracts`' ADR
+> 0006 (build-only CI, no publish). That was stale information — that repo's
+> own ADR 0010 had already superseded ADR 0006 and merged a working
+> publish pipeline on 2026-08-12, eight days *before* this ADR was written,
+> and `contracts-catalog`/`contracts-events` were already published under
+> `v0.1.0-SNAPSHOT`. See ADR 0013 for the correction.
 
 ## Context and Problem Statement
 

@@ -12,19 +12,24 @@ WORKDIR /workspace
 # 9a2618b0-cdbc-4c4e-bd2a-7cc6acd1cd40 is hb-catalog-service's id in the "hubinity"
 # Railway project — update it if this Dockerfile is ever reused for a different service.
 
-# Shared contracts (vendored as a git submodule, pinned in platform-shared-contracts/).
-# Fails fast and clearly if the builder didn't check out submodule content.
-COPY platform-shared-contracts ./platform-shared-contracts
-RUN ls platform-shared-contracts/pom.xml
-RUN --mount=type=cache,id=s/9a2618b0-cdbc-4c4e-bd2a-7cc6acd1cd40-/root/.m2,target=/root/.m2 \
-    mvn -B -ntp -q -f platform-shared-contracts/pom.xml \
-    -pl contracts-catalog,contracts-events -am install -DskipTests
+# Shared contracts (contracts-catalog, contracts-events) resolve from
+# platform-shared-contracts' GitHub Packages registry at build time — see
+# docs/adr/0013-consume-contracts-via-github-packages.md (supersedes ADR
+# 0012's git-subtree vendoring, which existed only because that registry's
+# publish pipeline looked unavailable at the time; it had already shipped).
+# GITHUB_USERNAME/GITHUB_TOKEN (read:packages) must be set as Railway
+# *build-time* variables — see settings.xml for details.
+ARG GITHUB_USERNAME
+ARG GITHUB_TOKEN
+ENV GITHUB_USERNAME=${GITHUB_USERNAME} \
+    GITHUB_TOKEN=${GITHUB_TOKEN}
+COPY settings.xml ./settings.xml
 
 # Cache deps first
 COPY pom.xml .
-RUN --mount=type=cache,id=s/9a2618b0-cdbc-4c4e-bd2a-7cc6acd1cd40-/root/.m2,target=/root/.m2 mvn -B -ntp -q dependency:go-offline || true
+RUN --mount=type=cache,id=s/9a2618b0-cdbc-4c4e-bd2a-7cc6acd1cd40-/root/.m2,target=/root/.m2 mvn -B -ntp -q -s settings.xml dependency:go-offline || true
 COPY src ./src
-RUN --mount=type=cache,id=s/9a2618b0-cdbc-4c4e-bd2a-7cc6acd1cd40-/root/.m2,target=/root/.m2 mvn -B -ntp -q -DskipTests package spring-boot:repackage
+RUN --mount=type=cache,id=s/9a2618b0-cdbc-4c4e-bd2a-7cc6acd1cd40-/root/.m2,target=/root/.m2 mvn -B -ntp -q -s settings.xml -DskipTests package spring-boot:repackage
 
 FROM ${JRE_IMAGE} AS runtime
 RUN addgroup -S app && adduser -S -G app app
